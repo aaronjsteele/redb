@@ -1,0 +1,19 @@
+# Use Rust to build
+FROM rustlang/rust:nightly as builder
+
+# Add source code to the build stage.
+ADD . /redb
+WORKDIR /redb
+
+RUN cargo install cargo-fuzz
+
+# BUILD INSTRUCTIONS
+WORKDIR /redb/fuzz
+RUN cargo +nightly fuzz build fuzz_redb
+# Output binaries are placed in /redb/fuzz/target/x86_64-unknown-linux-gnu/release/
+
+# Package Stage -- we package for a plain Ubuntu machine
+FROM --platform=linux/amd64 ubuntu:20.04
+
+# Copy the binary from the build stage to an Ubuntu docker image
+COPY --from=builder /redb/fuzz/target/x86_64-unknown-linux-gnu/release/fuzz_redb /
